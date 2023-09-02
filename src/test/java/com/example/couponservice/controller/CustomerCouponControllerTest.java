@@ -3,6 +3,7 @@ package com.example.couponservice.controller;
 import com.example.couponservice.service.CustomerCouponService;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.IssueCustomerCouponOut;
+import com.example.couponservice.service.dto.UseCustomerCouponIn;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +36,7 @@ public class CustomerCouponControllerTest {
     private MockMvc mvc;
 
     private JacksonTester<IssueCustomerCouponIn> jsonRequest;
+    private JacksonTester<UseCustomerCouponIn> useCustomerCouponInJacksonTester;
     private JacksonTester<IssueCustomerCouponOut> jsonResponse;
 
     @BeforeEach
@@ -61,6 +64,24 @@ public class CustomerCouponControllerTest {
         assertThat(response.getContentAsString())
                 .isEqualTo(jsonResponse.write(new IssueCustomerCouponOut(customerCouponId)).getJson());
 
+    }
+
+
+    @Test
+    public void useCustomerCouponTest() throws Exception {
+        // given
+        UseCustomerCouponIn useCustomerCouponIn = UseCustomerCouponIn.builder().customerId(1L).build();
+        UUID customerCouponId = UUID.randomUUID();
+
+        // when
+        MockHttpServletResponse response = mvc.perform(
+                patch("/customer-coupons/{customerCouponId}", customerCouponId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(useCustomerCouponInJacksonTester.write(useCustomerCouponIn).getJson())
+        ).andReturn().getResponse();
+
+        // then
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
     }
 
 }

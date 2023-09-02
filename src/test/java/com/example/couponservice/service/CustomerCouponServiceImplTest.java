@@ -6,6 +6,7 @@ import com.example.couponservice.domain.DiscountType;
 import com.example.couponservice.repository.CouponRepository;
 import com.example.couponservice.repository.CustomerCouponRepository;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
+import com.example.couponservice.service.dto.UseCustomerCouponIn;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -63,4 +64,21 @@ public class CustomerCouponServiceImplTest {
         // when, then
         assertThrows(IllegalArgumentException.class, () -> customerCouponService.issueCustomerCoupon(issueCustomerCouponIn));
     }
+
+
+    @Test
+    public void useCustomerCoupon() {
+        // given
+        Long customerId = 1L;
+        CustomerCoupon customerCoupon = CustomerCoupon.builder().id(UUID.randomUUID()).customerId(customerId).build();
+        UseCustomerCouponIn useCustomerCouponIn = UseCustomerCouponIn.builder().customerId(customerId).build();
+        given(customerCouponRepository.findById(any(UUID.class))).willReturn(Optional.of(customerCoupon));
+
+        // when
+        customerCouponService.useCustomerCoupon(customerCoupon.getId(), useCustomerCouponIn);
+
+        // then
+        assertNotNull(customerCoupon.getUsedAt());
+    }
+
 }
