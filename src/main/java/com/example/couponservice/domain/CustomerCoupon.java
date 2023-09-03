@@ -14,6 +14,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
+@Table(
+        uniqueConstraints = @UniqueConstraint(columnNames = {"customerId", "coupon_id"})
+)
 public class CustomerCoupon {
     @Id
     private UUID id;

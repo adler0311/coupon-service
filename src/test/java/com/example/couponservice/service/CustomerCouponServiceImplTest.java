@@ -15,13 +15,15 @@ import org.mockito.MockitoAnnotations;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 
 public class CustomerCouponServiceImplTest {
@@ -65,6 +67,29 @@ public class CustomerCouponServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> customerCouponService.issueCustomerCoupon(issueCustomerCouponIn));
     }
 
+    @Test
+    public void issueCustomerCoupon__duplicateRequest() {
+        // given
+        UUID uuid = UUID.randomUUID();
+        Coupon coupon = Coupon.builder().name("1").discountAmount(30).discountType(DiscountType.RATE).maxIssuanceCount(2L).usageExpAt(LocalDateTime.MAX).usageStartAt(LocalDateTime.now()).build();
+        IssueCustomerCouponIn issueCustomerCouponIn = IssueCustomerCouponIn.builder().couponId(1L).userId(1L).build();
+        CustomerCoupon newCustomerCoupon = CustomerCoupon.builder().id(uuid).coupon(coupon).customerId(issueCustomerCouponIn.getUserId()).build();
+        AtomicInteger callCount = new AtomicInteger(0);
+        given(couponRepository.findById(any(Long.class))).willReturn(Optional.of(coupon));
+        given(customerCouponRepository.save(any())).willReturn(newCustomerCoupon);
+        when(customerCouponRepository.existsCustomerCouponByCouponAndCustomerId(any(), any())).thenAnswer(invocation -> {
+            if (callCount.incrementAndGet() == 1) {
+                return false;
+            }
+            return true;
+        });
+
+        customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
+
+        // when, then
+        IllegalArgumentException thrownException =assertThrows(IllegalArgumentException.class, () -> customerCouponService.issueCustomerCoupon(issueCustomerCouponIn));
+        assertEquals("이미 발급 받은 쿠폰입니다", thrownException.getMessage());
+    }
 
     @Test
     public void useCustomerCoupon() {

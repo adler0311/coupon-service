@@ -7,14 +7,19 @@ import com.example.couponservice.repository.CustomerCouponRepository;
 import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class CustomerCouponServiceImpl implements CustomerCouponService {
     private final CouponRepository couponRepository;
@@ -26,14 +31,25 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
     }
 
     @Override
+    @Transactional
     public UUID issueCustomerCoupon(IssueCustomerCouponIn issueCustomerCouponIn) {
-        Optional<Coupon> coupon = couponRepository.findById(issueCustomerCouponIn.getCouponId());
-        if (coupon.isEmpty()) {
-            throw new IllegalArgumentException("쿠폰이 존재하지 않습니다: %s".formatted(issueCustomerCouponIn.getCouponId()));
-        }
+        try {
+            Optional<Coupon> coupon = couponRepository.findById(issueCustomerCouponIn.getCouponId());
+            if (coupon.isEmpty()) {
+                throw new IllegalArgumentException("쿠폰이 존재하지 않습니다: %s".formatted(issueCustomerCouponIn.getCouponId()));
+            }
 
-        CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon.get()));
-        return newCustomerCoupon.getId();
+            boolean customerCouponExists = customerCouponRepository.existsCustomerCouponByCouponAndCustomerId(coupon.get(), issueCustomerCouponIn.getUserId());
+            if (customerCouponExists) {
+                throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다");
+            }
+
+            CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon.get()));
+            return newCustomerCoupon.getId();
+        } catch (DataIntegrityViolationException e) {
+            log.warn("aa");
+            throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다 1");
+        }
     }
 
     @Override
