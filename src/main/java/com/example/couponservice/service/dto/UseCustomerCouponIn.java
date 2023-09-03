@@ -5,8 +5,8 @@ import lombok.*;
 @Builder
 @Setter
 @Getter
-//@AllArgsConstructor
-//@NoArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 public class UseCustomerCouponIn {
     private Long customerId;
 }

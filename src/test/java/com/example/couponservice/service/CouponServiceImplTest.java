@@ -2,6 +2,7 @@ package com.example.couponservice.service;
 
 
 import com.example.couponservice.domain.Coupon;
+import com.example.couponservice.domain.DiscountType;
 import com.example.couponservice.repository.CouponRepository;
 import com.example.couponservice.service.dto.CreateCouponIn;
 import org.junit.Before;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -32,7 +35,15 @@ public class CouponServiceImplTest {
     @Test
     public void createCouponTest() {
         // given
-        CreateCouponIn createCouponIn = CreateCouponIn.builder().build();
+        CreateCouponIn createCouponIn = CreateCouponIn
+                .builder()
+                .name("coupon 1")
+                .discountAmount(100)
+                .discountType(DiscountType.RATE)
+                .maxIssuanceCount(-1L)
+                .usageExpDt(LocalDateTime.MAX)
+                .usageStartDt(LocalDateTime.now())
+                .build();
         Coupon newCoupon = Coupon.builder().id(1L).name("coupon 1").build();
         given(couponRepository.save(any(Coupon.class))).willReturn(newCoupon);
 

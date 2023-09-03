@@ -4,12 +4,16 @@ import com.example.couponservice.domain.Coupon;
 import com.example.couponservice.domain.CustomerCoupon;
 import com.example.couponservice.repository.CouponRepository;
 import com.example.couponservice.repository.CustomerCouponRepository;
+import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CustomerCouponServiceImpl implements CustomerCouponService {
@@ -25,7 +29,7 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
     public UUID issueCustomerCoupon(IssueCustomerCouponIn issueCustomerCouponIn) {
         Optional<Coupon> coupon = couponRepository.findById(issueCustomerCouponIn.getCouponId());
         if (coupon.isEmpty()) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("쿠폰이 존재하지 않습니다: %s".formatted(issueCustomerCouponIn.getCouponId()));
         }
 
         CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon.get()));
@@ -47,5 +51,11 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
 
         customerCoupon.use();
         customerCouponRepository.save(customerCoupon);
+    }
+
+    @Override
+    public List<CustomerCouponOut> getCustomerCoupons(Long customerId, Pageable pageable) {
+        List<CustomerCoupon> customerCoupons = customerCouponRepository.findAllWithCouponByCustomerId(customerId, pageable);
+        return customerCoupons.stream().map(CustomerCouponOut::fromEntity).collect(Collectors.toList());
     }
 }

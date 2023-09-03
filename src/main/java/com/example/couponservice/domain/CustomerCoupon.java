@@ -29,4 +29,8 @@ public class CustomerCoupon {
     public void use() {
         this.usedAt = LocalDateTime.now();
     }
+
+    public void setCoupon(Coupon coupon) {
+        this.coupon = coupon;
+    }
 }
