@@ -6,6 +6,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
 @Getter
@@ -43,4 +44,11 @@ public class Coupon {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
+    public boolean isOutOfStock() {
+        if (maxIssuanceCount == -1L) {
+            return false;
+        }
+        
+        return Objects.equals(issuedCount, maxIssuanceCount);
+    }
 }

@@ -5,6 +5,7 @@ import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.IssueCustomerCouponOut;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +37,7 @@ public class CustomerCouponController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CustomerCouponOut>> getCustomerCoupons(@RequestParam Long customerId, Pageable pageable) {
+    public ResponseEntity<Page<CustomerCouponOut>> getCustomerCoupons(@RequestParam Long customerId, Pageable pageable) {
         return ResponseEntity.ok(customerCouponService.getCustomerCoupons(customerId, pageable));
     }
 

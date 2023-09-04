@@ -8,7 +8,10 @@ import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.LockMode;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,27 +38,33 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
     @Transactional
     public UUID issueCustomerCoupon(IssueCustomerCouponIn issueCustomerCouponIn) {
         try {
-            Optional<Coupon> coupon = couponRepository.findById(issueCustomerCouponIn.getCouponId());
-            if (coupon.isEmpty()) {
+            Optional<Coupon> couponOptional = couponRepository.findById(issueCustomerCouponIn.getCouponId());
+            if (couponOptional.isEmpty()) {
                 throw new IllegalArgumentException("쿠폰이 존재하지 않습니다: %s".formatted(issueCustomerCouponIn.getCouponId()));
             }
 
-            boolean customerCouponExists = customerCouponRepository.existsCustomerCouponByCouponAndCustomerId(coupon.get(), issueCustomerCouponIn.getUserId());
+            Coupon coupon = couponOptional.get();
+            if (coupon.isOutOfStock()) {
+                throw new IllegalArgumentException("재고가 부족합니다");
+            }
+
+            boolean customerCouponExists = customerCouponRepository.existsCustomerCouponByCouponAndCustomerId(coupon, issueCustomerCouponIn.getUserId());
             if (customerCouponExists) {
                 throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다");
             }
 
-            CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon.get()));
+            CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon));
             return newCustomerCoupon.getId();
         } catch (DataIntegrityViolationException e) {
-            log.warn("aa");
             throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다 1");
         }
     }
 
     @Override
+    @Transactional
     public void useCustomerCoupon(UUID customerCouponId, UseCustomerCouponIn useCustomerCouponIn) {
-        Optional<CustomerCoupon> optionalCustomerCoupon = customerCouponRepository.findById(customerCouponId);
+        Optional<CustomerCoupon> optionalCustomerCoupon = customerCouponRepository.findByIdForUpdate(customerCouponId);
+
         if (optionalCustomerCoupon.isEmpty()) {
             throw new IllegalArgumentException("사용자 쿠폰이 존재하지 않습니다: %s".formatted(customerCouponId));
         }
@@ -65,13 +75,18 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
             throw new IllegalArgumentException("사용 권한이 없습니다");
         }
 
+        if (customerCoupon.getUsedAt() != null) {
+            throw new IllegalArgumentException("이미 사용한 쿠폰입니다");
+        }
+
         customerCoupon.use();
         customerCouponRepository.save(customerCoupon);
     }
 
     @Override
-    public List<CustomerCouponOut> getCustomerCoupons(Long customerId, Pageable pageable) {
-        List<CustomerCoupon> customerCoupons = customerCouponRepository.findAllWithCouponByCustomerId(customerId, pageable);
-        return customerCoupons.stream().map(CustomerCouponOut::fromEntity).collect(Collectors.toList());
+    public Page<CustomerCouponOut> getCustomerCoupons(Long customerId, Pageable pageable) {
+        Page<CustomerCoupon> customerCoupons = customerCouponRepository.findAllWithCouponByCustomerId(customerId, pageable);
+        List<CustomerCouponOut> customerCouponOuts = customerCoupons.stream().map(CustomerCouponOut::fromEntity).collect(Collectors.toList());
+        return new PageImpl<>(customerCouponOuts, pageable, customerCoupons.getTotalElements());
     }
 }

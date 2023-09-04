@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -29,7 +31,14 @@ public class CustomerCoupon {
 
     private LocalDateTime usedAt;
 
+    @CreationTimestamp
+    private LocalDateTime issuedAt;
+
     public void use() {
+        if (coupon.getUsageExpAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("기간이 만료된 쿠폰입니다");
+        }
+
         this.usedAt = LocalDateTime.now();
     }
 

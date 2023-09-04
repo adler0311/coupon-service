@@ -18,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.json.JacksonTester;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -115,7 +117,8 @@ public class CustomerCouponControllerTest {
         List<CustomerCouponOut> customerCouponOuts = customerCoupons.stream()
                 .map(CustomerCouponOut::fromEntity)
                 .collect(Collectors.toList());
-        given(customerCouponService.getCustomerCoupons(any(Long.class), any(Pageable.class))).willReturn(customerCouponOuts);
+        Page<CustomerCouponOut> customerCouponOutPage = new PageImpl<>(customerCouponOuts, Pageable.unpaged(), customerCoupons.size());
+        given(customerCouponService.getCustomerCoupons(any(Long.class), any(Pageable.class))).willReturn(customerCouponOutPage);
 
         // when
         MockHttpServletResponse response = mvc.perform(

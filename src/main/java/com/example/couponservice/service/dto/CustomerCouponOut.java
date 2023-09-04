@@ -19,11 +19,14 @@ public class CustomerCouponOut {
 
     private DiscountType discountType;
 
+    private LocalDateTime issuedAt;
+
 
     public static CustomerCouponOut fromEntity(CustomerCoupon customerCoupon) {
         return CustomerCouponOut.builder()
                 .couponName(customerCoupon.getCoupon().getName())
                 .usedAt(customerCoupon.getUsedAt())
+                .issuedAt(customerCoupon.getIssuedAt())
                 .discountAmount(customerCoupon.getCoupon().getDiscountAmount())
                 .usageExpAt(customerCoupon.getCoupon().getUsageExpAt())
                 .usageStartAt(customerCoupon.getCoupon().getUsageStartAt())
