@@ -5,6 +5,7 @@ import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.IssueCustomerCouponOut;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import com.example.couponservice.service.exception.CouponOutOfStock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +26,7 @@ public class CustomerCouponController {
 
 
     @PostMapping
-    public ResponseEntity<IssueCustomerCouponOut> issueCustomerCoupon(@RequestBody IssueCustomerCouponIn issueCustomerCouponIn) {
+    public ResponseEntity<IssueCustomerCouponOut> issueCustomerCoupon(@RequestBody IssueCustomerCouponIn issueCustomerCouponIn) throws CouponOutOfStock {
         UUID issuedCustomerCouponId = customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
         return ResponseEntity.ok(new IssueCustomerCouponOut(issuedCustomerCouponId));
     }

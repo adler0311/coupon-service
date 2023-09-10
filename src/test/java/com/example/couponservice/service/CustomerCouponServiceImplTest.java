@@ -9,6 +9,7 @@ import com.example.couponservice.service.dto.CreateCouponIn;
 import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import com.example.couponservice.service.exception.CouponOutOfStock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -54,7 +55,7 @@ public class CustomerCouponServiceImplTest {
     }
 
     @Test
-    public void issueCustomerCoupon() {
+    public void issueCustomerCoupon() throws CouponOutOfStock {
         // given
         IssueCustomerCouponIn issueCustomerCouponIn = IssueCustomerCouponIn.builder().couponId(1L).userId(1L).build();
         UUID uuid = UUID.randomUUID();
@@ -81,7 +82,7 @@ public class CustomerCouponServiceImplTest {
     }
 
     @Test
-    public void issueCustomerCoupon__duplicateRequest() {
+    public void issueCustomerCoupon__duplicateRequest() throws CouponOutOfStock {
         // given
         UUID uuid = UUID.randomUUID();
         Coupon coupon = Coupon.builder().name("1").discountAmount(30).discountType(DiscountType.RATE).maxIssuanceCount(2L).usageExpAt(LocalDateTime.MAX).usageStartAt(LocalDateTime.now()).build();

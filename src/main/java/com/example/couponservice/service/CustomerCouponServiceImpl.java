@@ -7,6 +7,7 @@ import com.example.couponservice.repository.CustomerCouponRepository;
 import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import com.example.couponservice.service.exception.CouponOutOfStock;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.LockMode;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -36,7 +37,7 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
 
     @Override
     @Transactional
-    public UUID issueCustomerCoupon(IssueCustomerCouponIn issueCustomerCouponIn) {
+    public UUID issueCustomerCoupon(IssueCustomerCouponIn issueCustomerCouponIn) throws CouponOutOfStock {
         try {
             Optional<Coupon> couponOptional = couponRepository.findById(issueCustomerCouponIn.getCouponId());
             if (couponOptional.isEmpty()) {
@@ -45,14 +46,15 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
 
             Coupon coupon = couponOptional.get();
             if (coupon.isOutOfStock()) {
-                throw new IllegalArgumentException("재고가 부족합니다");
+                throw new CouponOutOfStock();
             }
 
             boolean customerCouponExists = customerCouponRepository.existsCustomerCouponByCouponAndCustomerId(coupon, issueCustomerCouponIn.getUserId());
             if (customerCouponExists) {
-                throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다");
+                throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다: %s".formatted(issueCustomerCouponIn.getUserId()));
             }
 
+            coupon.increaseIssuedCount();
             CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon));
             return newCustomerCoupon.getId();
         } catch (DataIntegrityViolationException e) {

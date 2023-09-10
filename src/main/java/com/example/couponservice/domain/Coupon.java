@@ -48,7 +48,11 @@ public class Coupon {
         if (maxIssuanceCount == -1L) {
             return false;
         }
-        
+
         return Objects.equals(issuedCount, maxIssuanceCount);
+    }
+
+    public void increaseIssuedCount() {
+        issuedCount++;
     }
 }
