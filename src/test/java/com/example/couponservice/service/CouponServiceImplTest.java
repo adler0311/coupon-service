@@ -5,11 +5,11 @@ import com.example.couponservice.domain.Coupon;
 import com.example.couponservice.domain.DiscountType;
 import com.example.couponservice.repository.CouponRepository;
 import com.example.couponservice.service.dto.CreateCouponIn;
-import org.junit.Before;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.time.LocalDateTime;
 
@@ -25,11 +25,14 @@ public class CouponServiceImplTest {
     @Mock
     private CouponRepository couponRepository;
 
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
 
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        this.couponService = new CouponServiceImpl(couponRepository);
+        this.couponService = new CouponServiceImpl(couponRepository, redisTemplate);
     }
 
     @Test

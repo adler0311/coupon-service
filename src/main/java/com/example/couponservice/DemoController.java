@@ -1,5 +1,6 @@
 package com.example.couponservice;
 
+import com.example.couponservice.service.exception.CouponAlreadyIssued;
 import com.example.couponservice.service.exception.CouponOutOfStock;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +25,10 @@ public class DemoController {
 
     @ExceptionHandler(CouponOutOfStock.class)
     public ResponseEntity<String> handleBadRequest(CouponOutOfStock ex) {
+        return ResponseEntity.badRequest().body(ex.getMessage());
+    }
+    @ExceptionHandler(CouponAlreadyIssued.class)
+    public ResponseEntity<String> handleBadRequest(CouponAlreadyIssued ex) {
         return ResponseEntity.badRequest().body(ex.getMessage());
     }
 }

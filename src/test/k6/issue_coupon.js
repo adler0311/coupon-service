@@ -26,7 +26,7 @@ export default function () {
 
 
     let payload = JSON.stringify({
-        couponId: 1,
+        couponId: 302,
         userId: baseUserId
     });
     let headers = {
