@@ -10,13 +10,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 
 import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
+import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.Mockito.*;
 
 
 public class CouponServiceImplTest {
@@ -27,6 +30,8 @@ public class CouponServiceImplTest {
 
     @Mock
     private StringRedisTemplate redisTemplate;
+    @Mock
+    private ValueOperations<String, String > valueOperations;
 
 
     @BeforeEach
@@ -49,6 +54,9 @@ public class CouponServiceImplTest {
                 .build();
         Coupon newCoupon = Coupon.builder().id(1L).name("coupon 1").build();
         given(couponRepository.save(any(Coupon.class))).willReturn(newCoupon);
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        doNothing().when(valueOperations).set(anyString(), anyString());
+
 
         // when
         Long couponId = couponService.createCoupon(createCouponIn);

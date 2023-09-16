@@ -40,5 +40,5 @@ export default function () {
     check(res, {
         'is status 400': (r) => r.status === 400
     })
-    // sleep(1);
+    sleep(1);
 }

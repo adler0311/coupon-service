@@ -12,6 +12,8 @@
 
 # 프로젝트 구조
 
+# 회고록
+- [레디스 트랜잭션을 이용한 쿠폰 선착순 발급](https://purplebook.tistory.com/9)
 
 
 # API

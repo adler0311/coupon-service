@@ -55,6 +55,7 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
             CustomerCoupon newCustomerCoupon = customerCouponRepository.save(issueCustomerCouponIn.toEntity(coupon));
             return newCustomerCoupon.getId();
         } catch (DataIntegrityViolationException e) {
+            log.warn(e.getMessage());
             throw new IllegalArgumentException("해당 고객에게 이미 발급되었습니다 1");
         }
     }
@@ -77,7 +78,6 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
 
                 // 트랜잭션 커밋
                 List<Object> results = operations.exec();
-                System.out.println(results);
                 String maxIssuanceCount = (String) results.get(0);
                 Long notIssued = (Long) results.get(1);
                 Long issuedCount = (Long) results.get(2);
@@ -86,7 +86,7 @@ public class CustomerCouponServiceImpl implements CustomerCouponService {
                     return IssueCouponResult.ISSUED_BEFORE;
                 }
 
-                if (Long.parseLong(maxIssuanceCount) < issuedCount) {
+                if (Long.parseLong(maxIssuanceCount) != -1 && Long.parseLong(maxIssuanceCount) < issuedCount) {
                     operations.opsForSet().remove(issuedUsersKey, userId.toString());
                     return IssueCouponResult.OUT_OF_STOCK;
                 }

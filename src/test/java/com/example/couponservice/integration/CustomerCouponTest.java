@@ -9,7 +9,12 @@ import com.example.couponservice.service.dto.CreateCouponIn;
 import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import com.example.couponservice.service.exception.CouponAlreadyIssued;
+import com.example.couponservice.service.exception.CouponOutOfStock;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,18 +22,19 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -47,17 +53,41 @@ public class CustomerCouponTest {
             .withUsername("test")
             .withPassword("test");
 
+    @Container
+    public static GenericContainer redisContainer = new GenericContainer("redis:5.0.3-alpine")
+            .withExposedPorts(6379);
+
     @DynamicPropertySource
     public static void registerPgProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgreSQLContainer::getJdbcUrl);
         registry.add("spring.datasource.username", postgreSQLContainer::getUsername);
         registry.add("spring.datasource.password", postgreSQLContainer::getPassword);
+
+        registry.add("spring.redis.host", redisContainer::getHost);
+        registry.add("spring.redis.port", redisContainer::getFirstMappedPort);
     }
 
     @Autowired
     private CustomerCouponService customerCouponService;
     @Autowired
     private CouponService couponService;
+    @Autowired
+    private RedisTemplate redisTemplate;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    public void clearDBBeforeEach() {
+        Objects.requireNonNull(redisTemplate.getConnectionFactory()).getConnection().flushDb();
+        jdbcTemplate.execute("truncate table coupon cascade");
+    }
+
+    @AfterEach
+    public void clearDBAfterEach() {
+        Objects.requireNonNull(redisTemplate.getConnectionFactory()).getConnection().flushDb();
+        jdbcTemplate.execute("truncate table coupon cascade");
+    }
+
 
     @Test
     public void issueCustomerCoupon__sameConcurrentRequests()   {
@@ -80,7 +110,7 @@ public class CustomerCouponTest {
                 .build();
 
         Page<CustomerCouponOut> initialResult = customerCouponService.getCustomerCoupons(issueCustomerCouponIn.getUserId(), Pageable.ofSize(5));
-        assertEquals(initialResult.getSize(), 0);
+        assertEquals(0, initialResult.getContent().size());
 
         int numConcurrentRequests = 10;
         CountDownLatch latch = new CountDownLatch(numConcurrentRequests);
@@ -94,6 +124,8 @@ public class CustomerCouponTest {
                 try {
                     customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
                     successCount.incrementAndGet();
+                } catch (CouponOutOfStock | CouponAlreadyIssued e) {
+                    System.out.println(e.getMessage());
                 } finally {
                     latch.countDown();
 
@@ -111,7 +143,7 @@ public class CustomerCouponTest {
         executorService.shutdown();
         assertEquals(1, successCount.get());
         Page<CustomerCouponOut> customerCouponOuts = customerCouponService.getCustomerCoupons(issueCustomerCouponIn.getUserId(), Pageable.ofSize(5));
-        assertEquals(1, customerCouponOuts.getSize());
+        assertEquals(1, customerCouponOuts.getContent().size());
     }
 
     @Test
@@ -131,7 +163,11 @@ public class CustomerCouponTest {
                     .couponId(createdCouponId)
                     .userId(customerId)
                     .build();
-            customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
+            try {
+                customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
+            } catch (CouponOutOfStock | CouponAlreadyIssued e) {
+                System.out.println(e.getMessage());
+            }
         });
 
         // when
@@ -171,14 +207,18 @@ public class CustomerCouponTest {
                     .couponId(createdCouponId)
                     .userId(customerId)
                     .build();
-            customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
+            try {
+                customerCouponService.issueCustomerCoupon(issueCustomerCouponIn);
+            } catch (CouponOutOfStock | CouponAlreadyIssued e) {
+                System.out.println(e.getMessage());
+            }
         });
 
         // when
         Page<CustomerCouponOut> customerCouponOutPage = customerCouponService.getCustomerCoupons(customerId, Pageable.ofSize(3));
 
         // then: query only not expired
-        assertEquals(1, customerCouponOutPage.getNumberOfElements());
+        assertEquals(1, customerCouponOutPage.getContent().size());
         List<CustomerCouponOut> customerCouponOuts = customerCouponOutPage.stream().toList();
         for (int i = 0; i < customerCouponOutPage.getNumberOfElements() -1; i++) {
             assertTrue(customerCouponOuts.get(i).getUsageExpAt().isAfter(LocalDateTime.now()));
@@ -186,7 +226,7 @@ public class CustomerCouponTest {
     }
 
     @Test
-    public void useCustomerCoupon__sameConcurrentRequests()   {
+    public void useCustomerCoupon__sameConcurrentRequests() throws CouponOutOfStock, CouponAlreadyIssued {
         // given
         CreateCouponIn createCouponIn = CreateCouponIn
                 .builder()

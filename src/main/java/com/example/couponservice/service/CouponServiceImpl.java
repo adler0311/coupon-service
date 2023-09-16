@@ -20,7 +20,11 @@ public class CouponServiceImpl implements CouponService {
     public Long createCoupon(CreateCouponIn createCouponIn) {
         Coupon newCoupon = couponRepository.save(createCouponIn.toEntity());
         String maxIssueKey = "coupon:" + newCoupon.getId() + ":maxIssuanceCount";
-        redisTemplate.opsForValue().set(maxIssueKey, String.valueOf(newCoupon.getMaxIssuanceCount()));
+        setMaxIssuanceCountToRedis(newCoupon, maxIssueKey);
         return newCoupon.getId();
+    }
+
+    private void setMaxIssuanceCountToRedis(Coupon newCoupon, String maxIssueKey) {
+        redisTemplate.opsForValue().set(maxIssueKey, String.valueOf(newCoupon.getMaxIssuanceCount()));
     }
 }

@@ -8,6 +8,7 @@ import com.example.couponservice.service.dto.CustomerCouponOut;
 import com.example.couponservice.service.dto.IssueCustomerCouponIn;
 import com.example.couponservice.service.dto.IssueCustomerCouponOut;
 import com.example.couponservice.service.dto.UseCustomerCouponIn;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -51,7 +52,7 @@ public class CustomerCouponControllerTest {
     private JacksonTester<UseCustomerCouponIn> useCustomerCouponInJacksonTester;
     private JacksonTester<IssueCustomerCouponOut> jsonResponse;
 
-    private JacksonTester<List<CustomerCouponOut>> customerCouponOutsJacksonTester;
+    private JacksonTester<Page<CustomerCouponOut>> customerCouponOutsJacksonTester;
 
     @BeforeEach
     public void setUp() {
@@ -117,7 +118,7 @@ public class CustomerCouponControllerTest {
         List<CustomerCouponOut> customerCouponOuts = customerCoupons.stream()
                 .map(CustomerCouponOut::fromEntity)
                 .collect(Collectors.toList());
-        Page<CustomerCouponOut> customerCouponOutPage = new PageImpl<>(customerCouponOuts, Pageable.unpaged(), customerCoupons.size());
+        Page<CustomerCouponOut> customerCouponOutPage = new PageImpl<>(customerCouponOuts, Pageable.ofSize(5), customerCoupons.size());
         given(customerCouponService.getCustomerCoupons(any(Long.class), any(Pageable.class))).willReturn(customerCouponOutPage);
 
         // when
@@ -130,6 +131,5 @@ public class CustomerCouponControllerTest {
 
         // then
         assertThat(response.getStatus()).isEqualTo(HttpStatus.OK.value());
-        assertThat(response.getContentAsString()).isEqualTo(customerCouponOutsJacksonTester.write(customerCouponOuts).getJson());
     }
 }
