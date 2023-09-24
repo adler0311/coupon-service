@@ -13,6 +13,11 @@
 # 프로젝트 구조
 
 # 회고록
+- [쿠폰 서비스 사이드 프로젝트 Day 1](https://purplebook.tistory.com/5)
+- [쿠폰 서비스 사이드 프로젝트 Day 2](https://purplebook.tistory.com/6)
+- [쿠폰 서비스 사이드 프로젝트 Day 3](https://purplebook.tistory.com/7)
+- [쿠폰 서비스 사이드 프로젝트 Day 4](https://purplebook.tistory.com/8)
+- [쿠폰 서비스 사이드 프로젝트 Day 5](https://purplebook.tistory.com/9)
 - [레디스 트랜잭션을 이용한 쿠폰 선착순 발급](https://purplebook.tistory.com/9)
 
 
